@@ -2,7 +2,7 @@
 import pickle
 import protein
 import awalk
-import objectives
+import objective_functions as objectives
 import argparse
 import vienna
 
