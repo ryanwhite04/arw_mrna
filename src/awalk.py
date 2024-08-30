@@ -1,6 +1,6 @@
 """ Implements adaptive random walks on CDSs. """
 from typing import Callable, List, Optional
-import protein
+from .protein import CodonFrequencyTable, random_cds
 import random
 import dataclasses
 
@@ -8,7 +8,7 @@ import dataclasses
 @dataclasses.dataclass
 class WalkConfig:
     aa_seq: str
-    freq_table: protein.CodonFrequencyTable
+    freq_table: CodonFrequencyTable
     objective: Callable[[List[str]], float]
     steps: int
     init_cds: Optional[List[str]] = None
@@ -23,7 +23,7 @@ class WalkResult:
 
 def adaptive_random_walk(config: WalkConfig):
     """Runs ARW to maximize objective function on CDSs."""
-    cds = protein.random_cds(
+    cds = random_cds(
         config.aa_seq, config.freq_table) if config.init_cds is None else config.init_cds
     prev_fitness = config.objective(cds)
     if config.verbose:
@@ -50,7 +50,7 @@ def adaptive_random_walk(config: WalkConfig):
 
 def adaptive_random_walk_generator(config: WalkConfig):
     """Runs ARW to maximize objective function on CDSs."""
-    cds = protein.random_cds(
+    cds = random_cds(
         config.aa_seq, config.freq_table) if config.init_cds is None else config.init_cds
     prev_fitness = config.objective(cds)
     if config.verbose:
