@@ -23,7 +23,9 @@ def make_cai_threshold_obj(config: CAIThresholdObjectiveConfig) -> Callable[[Lis
             max(0, config.cai_threshold-cai)*config.cai_exp_scale)-1
         if config.verbose:
             print(f"-- Obj fn log. CAI: {cai}")
-        return -cai_penalty
+        fitness = -cai_penalty
+        measures = {"CAI": cai}
+        return fitness, measures
     return obj
 
 
@@ -38,7 +40,9 @@ def make_cai_and_aup_obj(config: CAIThresholdObjectiveConfig) -> Callable[[List[
         ensemble_paired_prob = 1-aup
         if config.verbose:
             print(f"-- Obj fn log. CAI: {cai}, AUP: {aup}")
-        return ensemble_paired_prob - cai_penalty
+        fitness = ensemble_paired_prob - cai_penalty
+        measures = {"CAI": cai, "AUP": aup}
+        return fitness, measures
     return obj
 
 
@@ -52,5 +56,7 @@ def make_cai_and_efe_obj(config: CAIThresholdObjectiveConfig) -> Callable[[List[
         efe = ensemble_free_energy(rna_seq)
         if config.verbose:
             print(f"-- Obj fn log. CAI: {cai}, EFE: {efe}")
-        return -efe * (1/cai_penalty)
+        fitness = -efe*(1/cai_penalty)
+        measures = {"CAI": cai, "EFE": efe}
+        return fitness, measures
     return obj
