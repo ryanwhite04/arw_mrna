@@ -1,6 +1,7 @@
 """ This module contains code for dealing with amino acid sequence and coding sequence (CDS) data. """
 import math
 import dataclasses
+import python_codon_tables
 
 AA_SINGLE_LETTER = {
     "Ala": "A",
@@ -30,55 +31,56 @@ AA_SINGLE_LETTER = {
 def is_valid_aa_letter(aa):
     return aa in AA_SINGLE_LETTER.values() and aa != '*'
 
-
 class CodonFrequencyTable:
-    def __init__(self, table_path):
-        file = open(table_path, 'r')
-        self.codons = set()
+    
+    # static method to get list of all available tables
+    @staticmethod
+    def get_available_tables():
+        return python_codon_tables.get_available_tables()
+    
+    def __init_from_file(self, file_path):
+        if file_path.endswith("homosapiens.txt"): return 9606
+        if file_path.endswith("mouse.txt"): return 10090
+    
+    def __init__(self, taxid):
+        # if taxid is a string, check if it is a file path
+        if isinstance(taxid, str):
+            if taxid.endswith(".txt"):
+                taxid = self.__init_from_file(taxid)
+        self.taxid = taxid
+        self.table = python_codon_tables.get_codons_table(taxid, replace_U_by_T=False)
         self.codon_to_aa = {}
         self.aa_to_codons = {}
-        self.codon_freq = {}
-        self.aa_max_freq = {}
-        # The format uses T instead of U
-        self.nt_map = {'A': 'A', 'T': 'U', 'C': 'C', 'G': 'G'}
-        for line in file:
-            tokens = line.strip(" \n").split()
-            if len(tokens) < 3:
-                continue
-            aa = tokens[0]
-            aa = AA_SINGLE_LETTER[aa]
-            codon = ''.join([self.nt_map[nt] for nt in tokens[1]])
-            freq = round(float(tokens[2]))
-            self.codons.add(codon)
-            self.codon_to_aa[codon] = aa
-            if aa not in self.aa_to_codons:
-                self.aa_to_codons[aa] = set()
-            self.aa_to_codons[aa].add(codon)
-            self.codon_freq[codon] = freq
-            if aa not in self.aa_max_freq:
-                self.aa_max_freq[aa] = 0
-            self.aa_max_freq[aa] = max(self.aa_max_freq[aa], freq)
-        file.close()
-
+        for aa in self.table.keys():
+            self.aa_to_codons[aa] = set()
+            for codon in self.table[aa].keys():
+                self.codon_to_aa[codon] = aa
+                self.aa_to_codons[aa].add(codon)
+    
     def get_codon_freq(self, codon):
-        return self.codon_freq[codon]
-
+        total = 0
+        for aa in self.table.keys():
+            # if codon is in the table under the current amino acid
+            if codon in self.table[aa]:
+                total += self.table[aa][codon]
+        return total
+    
     def get_aa_max_freq(self, aa):
-        return self.aa_max_freq[aa]
-
+        return max(self.table[aa][codon] for codon in self.table[aa].keys())
+    
     def get_codons(self, aa) -> set[str]:
-        return self.aa_to_codons[aa]
-
-    # Maximum number of codons for a single amino acid
-    def max_codons(self) -> int:
-        return max(len(self.get_codons(aa)) for aa in self.aa_to_codons)
-
+        return self.table[aa].keys()
+    
     def get_aa(self, codon):
         return self.codon_to_aa[codon]
 
+    # Maximum number of codons for a single amino acid
+    def max_codons(self) -> int:
+        return max(len(self.get_codons(aa)) for aa in self.amino_acids)
+    
     def codon_adaption_weight(self, codon):
         return self.get_codon_freq(codon) / self.get_aa_max_freq(self.get_aa(codon))
-
+    
     def codon_adaptation_index(self, cds) -> float:
         cai = 1
         for codon in cds:
@@ -90,6 +92,14 @@ class CodonFrequencyTable:
         for codon in cds:
             cai += math.log(self.codon_adaption_weight(codon))
         return cai / len(cds)
+    
+    @property
+    def amino_acids(self):
+        return self.table.keys()
+    
+    @property
+    def name(self):
+        return self.table.name
 
 
 @dataclasses.dataclass
