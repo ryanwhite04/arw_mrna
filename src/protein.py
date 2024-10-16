@@ -125,11 +125,12 @@ def read_cds(tsv_path):
     return cds
 
 
-def random_cds(aa_seq, freq_table) -> list[str]:
+def random_cds(aa_seq, freq_table, seed=None) -> list[str]:
     import random
+    generator = random.Random(seed)
     cds = []
     for aa in aa_seq:
-        cds.append(random.choice(list(freq_table.aa_to_codons[aa])))
+        cds.append(generator.choice(list(freq_table.aa_to_codons[aa])))
     return cds
 
 
