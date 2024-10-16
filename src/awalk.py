@@ -10,7 +10,7 @@ class WalkConfig:
     freq_table: CodonFrequencyTable
     objective: Callable[[List[str]], float]
     steps: int
-    init_cds: Optional[List[str]] = None,
+    init_cds: Optional[List[str]] = None
     verbose: bool = False
     seed: Optional[int] = None
 
